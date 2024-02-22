@@ -3,6 +3,8 @@
 
 [ENG](README.ENG.md) | RU
 
+[![Go](https://github.com/Mubiridziri/goblog/actions/workflows/go.yml/badge.svg)](https://github.com/Mubiridziri/goblog/actions/workflows/go.yml)
+
 ## Цель
 
 Данный проект я разрабатываю для наработки опыта и навыков владения модульными тестами.

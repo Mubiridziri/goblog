@@ -3,6 +3,8 @@
 
 ENG | [RU](README.md)
 
+[![Go](https://github.com/Mubiridziri/goblog/actions/workflows/go.yml/badge.svg)](https://github.com/Mubiridziri/goblog/actions/workflows/go.yml)
+
 ## Target
 
 I am developing this project to gain experience and skills in unit tests.
