@@ -1,0 +1,218 @@
+definitions:
+  users.CreateUser:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    - username
+    type: object
+  users.PaginatedUsersList:
+    properties:
+      entries:
+        items:
+          $ref: '#/definitions/users.User'
+        type: array
+      total:
+        type: integer
+    type: object
+  users.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  users.UserLogin:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/login:
+    get:
+      consumes:
+      - application/json
+      description: You can check auth or get profile data
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+      summary: Profile
+      tags:
+      - Security
+    post:
+      consumes:
+      - application/json
+      description: Authorization with help username and password
+      parameters:
+      - description: Model
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.UserLogin'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+      summary: Login
+      tags:
+      - Security
+  /api/v1/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout from account
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Logout
+      tags:
+      - Security
+  /api/v1/users:
+    get:
+      consumes:
+      - application/json
+      description: List of users
+      parameters:
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Limit of page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/users.PaginatedUsersList'
+            type: array
+      summary: Get Users List
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Creating user
+      parameters:
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/users.CreateUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+      summary: Create User
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Updating user
+      parameters:
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/users.CreateUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+      summary: Update User
+      tags:
+      - Users
+  /api/v1/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deleting user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+      summary: Delete User
+      tags:
+      - Users
+    get:
+      consumes:
+      - application/json
+      description: Get user info by user id
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+      summary: Detail User
+      tags:
+      - Users
+swagger: "2.0"

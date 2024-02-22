@@ -1,0 +1,23 @@
+version: "3"
+services:
+  app:
+    restart: on-failure
+    build:
+      context: ..
+      dockerfile: build/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - database
+    environment:
+      GIN_MODE: release
+      DATABASE_DSN: "host=database user=postgres password=postgres dbname=app port=5432 sslmode=disable"
+
+  database:
+    image: postgres:15.5
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
