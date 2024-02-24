@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -9,6 +11,7 @@ import (
 	"goblog/docs"
 	"goblog/internal/usecase/users"
 	"net/http"
+	"path/filepath"
 	"strconv"
 )
 
@@ -48,23 +51,78 @@ func (s *Server) registerRoutes() {
 	s.Router.Use(gin.Recovery())
 	s.Router.Use(sessions.Sessions(UserKey, cookie.NewStore(secret)))
 
-	//Swagger
-	configureSwagger(s.Router)
+	//Server Side Rendering
+	//s.Router.LoadHTMLGlob("web/template/**/*")
+	s.Router.HTMLRender = loadTemplates("web/template/")
+	s.Router.Static("/static", "web/static/")
+	ui := s.Router.Group("")
+	ui.Use(LoadUserIfExists(s.userController))
+	{
+		ui.GET("", s.renderHomePage)
+		ui.GET("/login", s.loginPage)
+		ui.POST("/login", s.loginPage)
+		ui.GET("/register", s.registerPage)
+		ui.POST("/register", s.registerPage)
+		ui.GET("/u/:username", s.profilePage)
+	}
 
-	// K8s probe
-	s.Router.GET("/healthz", func(c *gin.Context) { c.Status(http.StatusOK) })
+	s.AddUserPagesRoutes(ui)
 
 	//API /api/v1
-	mainGroup := s.Router.Group("/api/v1")
-	mainGroup.POST("/login", s.handleLogin)
+	api := s.Router.Group("/api/v1")
+	api.POST("/login", s.handleLogin)
 
-	mainGroup.Use(AuthRequired(s.userController))
+	api.Use(AuthRequired(s.userController))
 	{
-		s.AddUserRoutes(mainGroup)
+		s.AddUserAPIRoutes(api)
 
-		mainGroup.GET("/login", s.handleProfile)
-		mainGroup.GET("/logout", s.handleLogout)
+		api.GET("/login", s.handleProfile)
+		api.GET("/logout", s.handleLogout)
 	}
+
+	//Swagger
+	configureSwagger(s.Router)
+	// K8s probe
+	s.Router.GET("/healthz", func(c *gin.Context) { c.Status(http.StatusOK) })
+}
+
+func loadTemplates(templatesDir string) multitemplate.Renderer {
+	r := multitemplate.NewRenderer()
+
+	rootPages, err := filepath.Glob(templatesDir + "/*.tmpl")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Println("Loaded templates: ")
+
+	for _, page := range rootPages {
+		path := filepath.Base(page)
+		fmt.Println("\t - " + path)
+		r.AddFromFiles(path, page)
+	}
+
+	layouts, err := filepath.Glob(templatesDir + "/layouts/*.tmpl")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	includes, err := filepath.Glob(templatesDir + "/includes/*.tmpl")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Generate our templates map from our layouts/ and includes/ directories
+	for _, include := range includes {
+		path := filepath.Base(include)
+		layoutCopy := make([]string, len(layouts))
+		copy(layoutCopy, layouts)
+		files := append(layoutCopy, include)
+		fmt.Println("\t - " + path)
+		r.AddFromFiles(path, files...)
+	}
+	fmt.Println("")
+	return r
 }
 
 func configureSwagger(r *gin.Engine) {
@@ -105,6 +163,29 @@ func AuthRequired(controller *users.Controller) gin.HandlerFunc {
 
 }
 
+func LoadUserIfExists(controller *users.Controller) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		userKey := session.Get(UserKey)
+
+		if userKey == nil {
+			c.Next()
+			return
+		}
+
+		authUser, err := controller.GetUserByUsername(userKey.(string))
+
+		if err != nil {
+			c.Next()
+			return
+		}
+
+		c.Set("user", authUser)
+		c.Next()
+	}
+
+}
+
 func (s *Server) getListQuery(c *gin.Context) (ListQuery, error) {
 	pageQuery := c.Query("page")
 	limitQuery := c.Query("limit")
@@ -136,4 +217,16 @@ func (s *Server) getListQuery(c *gin.Context) (ListQuery, error) {
 		Simplify: simplify,
 	}
 	return query, nil
+}
+
+func (s *Server) renderHomePage(c *gin.Context) {
+	user, exists := c.Get("user")
+
+	params := gin.H{}
+
+	if exists {
+		params["user"] = user
+	}
+
+	c.HTML(http.StatusOK, "home.tmpl", params)
 }

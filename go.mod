@@ -3,6 +3,7 @@ module goblog
 go 1.21
 
 require (
+	github.com/gin-contrib/multitemplate v0.0.0-20231230012943-32b233489a81
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.9.1
 	github.com/stretchr/testify v1.8.4

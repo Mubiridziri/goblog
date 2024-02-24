@@ -7,8 +7,8 @@ import (
 )
 
 type UserLogin struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username string `json:"username" form:"username" binding:"required"`
+	Password string `json:"password" form:"password" binding:"required"`
 }
 
 type User struct {
@@ -22,11 +22,12 @@ type User struct {
 }
 
 type CreateUser struct {
-	FirstName string `json:"first_name" binding:"required"`
-	LastName  string `json:"last_name" binding:"required"`
-	Username  string `json:"username" binding:"required"`
-	Email     string `json:"email" binding:"required"`
-	Password  string `json:"password"  binding:"required"`
+	FirstName       string `json:"first_name" form:"first_name" binding:"required,min=2"`
+	LastName        string `json:"last_name" form:"last_name" binding:"required,min=3"`
+	Username        string `json:"username" form:"username" binding:"required,min=5"`
+	Email           string `json:"email" form:"email" binding:"required,email"`
+	Password        string `json:"password" form:"password"  binding:"required,eqfield=ConfirmPassword,min=8"`
+	ConfirmPassword string `json:"-" form:"confirm_password"  binding:"required"`
 }
 
 type Repository interface {
