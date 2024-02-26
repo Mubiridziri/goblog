@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"goblog/internal/usecase/articles"
 	"goblog/internal/usecase/users"
+	"math"
 	"net/http"
 	"strconv"
 )
@@ -95,14 +96,21 @@ func (s *Server) ViewArticlePage(c *gin.Context) {
 
 }
 
+func (s *Server) paginateServerSideArticles(articlesList articles.PaginatedArticleList, page int, params gin.H) {
+	pagesCount := int(math.Ceil(float64(articlesList.Total) / 10))
+	nextPage := page + 1
+	if nextPage <= pagesCount {
+		params["nextPage"] = nextPage
+	}
+	if page > 1 {
+		params["previousPage"] = page - 1
+	}
+}
+
 func (s *Server) AddArticlesPagesRoutes(g *gin.RouterGroup) {
 	grp := g.Group("/articles")
 	grp.GET("/new", s.NewArticlePage)
 	grp.POST("/new", s.NewArticlePage)
 
 	grp.GET("/:id", s.ViewArticlePage)
-
-	//grp.PUT("/:id", s.handleUpdateUser)
-	//grp.GET("/:id", s.handleDetailUser)
-	//grp.DELETE("/:id", s.handleDeleteUser)
 }

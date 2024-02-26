@@ -12,7 +12,6 @@ import (
 	"goblog/internal/usecase/articles"
 	"goblog/internal/usecase/topics"
 	"goblog/internal/usecase/users"
-	"math"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -60,8 +59,28 @@ func (s *Server) registerRoutes() {
 	s.Router.Use(gin.Recovery())
 	s.Router.Use(sessions.Sessions(UserKey, cookie.NewStore(secret)))
 
-	//Server Side Rendering
-	//s.Router.LoadHTMLGlob("web/template/**/*")
+	s.configureServerSidePages()
+	s.configureRestAPI()
+	configureSwagger(s.Router)
+
+	// K8s probe
+	s.Router.GET("/healthz", func(c *gin.Context) { c.Status(http.StatusOK) })
+}
+
+func (s *Server) configureRestAPI() {
+	api := s.Router.Group("/api/v1")
+	api.POST("/login", s.handleLogin)
+
+	api.Use(AuthRequired(s.userController))
+	{
+		s.AddUserAPIRoutes(api)
+
+		api.GET("/login", s.handleProfile)
+		api.GET("/logout", s.handleLogout)
+	}
+}
+
+func (s *Server) configureServerSidePages() {
 	s.Router.HTMLRender = loadTemplates("web/template/")
 	s.Router.Static("/static", "web/static/")
 	ui := s.Router.Group("")
@@ -76,64 +95,6 @@ func (s *Server) registerRoutes() {
 		s.AddArticlesPagesRoutes(ui)
 
 	}
-
-	s.AddUserPagesRoutes(ui)
-
-	//API /api/v1
-	api := s.Router.Group("/api/v1")
-	api.POST("/login", s.handleLogin)
-
-	api.Use(AuthRequired(s.userController))
-	{
-		s.AddUserAPIRoutes(api)
-
-		api.GET("/login", s.handleProfile)
-		api.GET("/logout", s.handleLogout)
-	}
-
-	//Swagger
-	configureSwagger(s.Router)
-	// K8s probe
-	s.Router.GET("/healthz", func(c *gin.Context) { c.Status(http.StatusOK) })
-}
-
-func loadTemplates(templatesDir string) multitemplate.Renderer {
-	r := multitemplate.NewRenderer()
-
-	rootPages, err := filepath.Glob(templatesDir + "/*.tmpl")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	fmt.Println("Loaded templates: ")
-
-	for _, page := range rootPages {
-		path := filepath.Base(page)
-		fmt.Println("\t - " + path)
-		r.AddFromFiles(path, page)
-	}
-
-	layouts, err := filepath.Glob(templatesDir + "/layouts/*.tmpl")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	includes, err := filepath.Glob(templatesDir + "/includes/*.tmpl")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// Generate our templates map from our layouts/ and includes/ directories
-	for _, include := range includes {
-		path := filepath.Base(include)
-		layoutCopy := make([]string, len(layouts))
-		copy(layoutCopy, layouts)
-		files := append(layoutCopy, include)
-		fmt.Println("\t - " + path)
-		r.AddFromFiles(path, files...)
-	}
-	fmt.Println("")
-	return r
 }
 
 func configureSwagger(r *gin.Engine) {
@@ -256,12 +217,12 @@ func (s *Server) renderHomePage(c *gin.Context) {
 		articlesList, _ := s.articleController.ListArticlesByTopic(page, 10, topicID)
 		params["articles"] = articlesList.Entries
 		params["currentTopicID"] = topicID
-		paginate(articlesList, page, params)
+		s.paginateServerSideArticles(articlesList, page, params)
 
 	} else {
 		articlesList, _ := s.articleController.ListArticle(page, 10)
 		params["articles"] = articlesList.Entries
-		paginate(articlesList, page, params)
+		s.paginateServerSideArticles(articlesList, page, params)
 	}
 
 	topicsList, _ := s.topicController.ListTopics(1, 10)
@@ -270,13 +231,41 @@ func (s *Server) renderHomePage(c *gin.Context) {
 	c.HTML(http.StatusOK, "home.tmpl", params)
 }
 
-func paginate(articlesList articles.PaginatedArticleList, page int, params gin.H) {
-	pagesCount := int(math.Ceil(float64(articlesList.Total) / 10))
-	nextPage := page + 1
-	if nextPage <= pagesCount {
-		params["nextPage"] = nextPage
+func loadTemplates(templatesDir string) multitemplate.Renderer {
+	r := multitemplate.NewRenderer()
+
+	rootPages, err := filepath.Glob(templatesDir + "/*.tmpl")
+	if err != nil {
+		panic(err.Error())
 	}
-	if page > 1 {
-		params["previousPage"] = page - 1
+
+	fmt.Println("Loaded templates: ")
+
+	for _, page := range rootPages {
+		path := filepath.Base(page)
+		fmt.Println("\t - " + path)
+		r.AddFromFiles(path, page)
 	}
+
+	layouts, err := filepath.Glob(templatesDir + "/layouts/*.tmpl")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	includes, err := filepath.Glob(templatesDir + "/includes/*.tmpl")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Generate our templates map from our layouts/ and includes/ directories
+	for _, include := range includes {
+		path := filepath.Base(include)
+		layoutCopy := make([]string, len(layouts))
+		copy(layoutCopy, layouts)
+		files := append(layoutCopy, include)
+		fmt.Println("\t - " + path)
+		r.AddFromFiles(path, files...)
+	}
+	fmt.Println("")
+	return r
 }
