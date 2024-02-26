@@ -67,6 +67,32 @@ func (r articleRepository) ListArticlesByTopic(page, limit, topicID int) ([]Arti
 	return articles, nil
 }
 
+func (r articleRepository) ListArticlesByYear(page, limit int, year string) ([]Article, error) {
+	var articles []Article
+	offset := (page - 1) * limit
+	if err := r.db.
+		Offset(offset).
+		Limit(limit).
+		Preload("Author").
+		Preload("Topic").
+		Order("id desc").
+		Where("to_char(created_at, 'YYYY') = ?", year).
+		Find(&articles).Error; err != nil {
+		return []Article{}, err
+	}
+
+	return articles, nil
+}
+
+func (r articleRepository) ListArchiveYears() []string {
+	var years []string
+	if err := r.db.Model(&Article{}).Select("to_char(created_at, 'YYYY') as years").Group("to_char(created_at,'YYYY')").Scan(&years).Error; err != nil {
+		return []string{}
+	}
+
+	return years
+}
+
 func (r articleRepository) GetArticlesCount() int64 {
 	var count int64
 	r.db.Model(&Article{}).Count(&count)
@@ -76,5 +102,11 @@ func (r articleRepository) GetArticlesCount() int64 {
 func (r articleRepository) GetArticlesByTopicCount(topicID int) int64 {
 	var count int64
 	r.db.Model(&Article{}).Where(&Article{TopicID: topicID}).Count(&count)
+	return count
+}
+
+func (r articleRepository) GetArticlesByYearCount(year string) int64 {
+	var count int64
+	r.db.Model(&Article{}).Where("to_char(created_at, 'YYYY') = ?", year).Count(&count)
 	return count
 }

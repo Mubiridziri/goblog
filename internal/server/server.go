@@ -194,6 +194,7 @@ func (s *Server) getListQuery(c *gin.Context) (ListQuery, error) {
 func (s *Server) renderHomePage(c *gin.Context) {
 	pageParam := c.Query("page")
 	topicIdParam := c.Query("topicId")
+	year := c.Query("year")
 
 	page, err := strconv.Atoi(pageParam)
 
@@ -219,6 +220,11 @@ func (s *Server) renderHomePage(c *gin.Context) {
 		params["currentTopicID"] = topicID
 		s.paginateServerSideArticles(articlesList, page, params)
 
+	} else if year != "" {
+		articlesList, _ := s.articleController.ListArticlesByYear(page, 10, year)
+		params["articles"] = articlesList.Entries
+		params["currentYear"] = year
+		s.paginateServerSideArticles(articlesList, page, params)
 	} else {
 		articlesList, _ := s.articleController.ListArticle(page, 10)
 		params["articles"] = articlesList.Entries
@@ -227,6 +233,7 @@ func (s *Server) renderHomePage(c *gin.Context) {
 
 	topicsList, _ := s.topicController.ListTopics(1, 10)
 	params["topics"] = topicsList.Entries
+	params["years"] = s.articleController.ListArchiveYears()
 
 	c.HTML(http.StatusOK, "home.tmpl", params)
 }

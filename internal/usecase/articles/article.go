@@ -34,8 +34,11 @@ type Repository interface {
 	GetArticleById(id int) (entity.Article, error)
 	ListArticle(page, limit int) ([]entity.Article, error)
 	ListArticlesByTopic(page, limit, topicID int) ([]entity.Article, error)
+	ListArticlesByYear(page, limit int, year string) ([]entity.Article, error)
 	GetArticlesCount() int64
 	GetArticlesByTopicCount(topicID int) int64
+	GetArticlesByYearCount(year string) int64
+	ListArchiveYears() []string
 }
 
 type PaginatedArticleList struct {
@@ -49,6 +52,10 @@ type Controller struct {
 
 func NewController(repo Repository) *Controller {
 	return &Controller{Repository: repo}
+}
+
+func (c Controller) ListArchiveYears() []string {
+	return c.Repository.ListArchiveYears()
 }
 
 func (c Controller) ListArticle(page, limit int) (PaginatedArticleList, error) {
@@ -85,6 +92,25 @@ func (c Controller) ListArticlesByTopic(page, limit, topicID int) (PaginatedArti
 
 	return PaginatedArticleList{
 		Total:   c.Repository.GetArticlesByTopicCount(topicID),
+		Entries: articles,
+	}, nil
+}
+
+func (c Controller) ListArticlesByYear(page, limit int, year string) (PaginatedArticleList, error) {
+	articleDB, err := c.Repository.ListArticlesByYear(page, limit, year)
+
+	if err != nil {
+		return PaginatedArticleList{}, err
+	}
+
+	var articles []Article
+
+	for _, item := range articleDB {
+		articles = append(articles, fromDBArticle(&item))
+	}
+
+	return PaginatedArticleList{
+		Total:   c.Repository.GetArticlesByYearCount(year),
 		Entries: articles,
 	}, nil
 }
