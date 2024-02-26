@@ -64,7 +64,7 @@ func (c Controller) LoginUser(input UserLogin) (User, error) {
 		return User{}, errors.New("invalid credentials")
 	}
 
-	return fromDBUser(&user), nil
+	return FromDBUser(&user), nil
 }
 
 func (c Controller) CreateUser(input CreateUser) (User, error) {
@@ -79,7 +79,7 @@ func (c Controller) CreateUser(input CreateUser) (User, error) {
 		return User{}, err
 	}
 
-	return fromDBUser(&user), nil
+	return FromDBUser(&user), nil
 }
 
 func (c Controller) UpdateUser(id int, input CreateUser) (User, error) {
@@ -103,7 +103,7 @@ func (c Controller) UpdateUser(id int, input CreateUser) (User, error) {
 		return User{}, err
 	}
 
-	return fromDBUser(&user), nil
+	return FromDBUser(&user), nil
 }
 
 func (c Controller) RemoveUser(id int) (User, error) {
@@ -118,7 +118,7 @@ func (c Controller) RemoveUser(id int) (User, error) {
 		return User{}, err
 	}
 
-	return fromDBUser(&user), nil
+	return FromDBUser(&user), nil
 }
 
 func (c Controller) ListUsers(page, limit int) (PaginatedUsersList, error) {
@@ -132,7 +132,7 @@ func (c Controller) ListUsers(page, limit int) (PaginatedUsersList, error) {
 	var userViews []User
 
 	for _, user := range users {
-		userViews = append(userViews, fromDBUser(&user))
+		userViews = append(userViews, FromDBUser(&user))
 	}
 
 	return PaginatedUsersList{
@@ -149,7 +149,7 @@ func (c Controller) GetUserById(id int) (User, error) {
 		return User{}, err
 	}
 
-	return fromDBUser(&user), nil
+	return FromDBUser(&user), nil
 }
 
 func (c Controller) GetUserByUsername(username string) (User, error) {
@@ -159,10 +159,10 @@ func (c Controller) GetUserByUsername(username string) (User, error) {
 		return User{}, err
 	}
 
-	return fromDBUser(&user), nil
+	return FromDBUser(&user), nil
 }
 
-func fromDBUser(user *entity.User) User {
+func FromDBUser(user *entity.User) User {
 	return User{
 		ID:        user.ID,
 		FirstName: user.FirstName,

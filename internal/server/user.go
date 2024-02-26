@@ -51,7 +51,7 @@ func (s *Server) loginPage(c *gin.Context) {
 
 		if err != nil {
 			c.HTML(http.StatusUnauthorized, "login.tmpl", gin.H{
-				"error": err.Error(),
+				"error": "Неверный логин или пароль",
 			})
 			return
 		}

@@ -5,6 +5,8 @@ import (
 	"goblog/internal/database"
 	"goblog/internal/entity"
 	"goblog/internal/server"
+	"goblog/internal/usecase/articles"
+	"goblog/internal/usecase/topics"
 	"goblog/internal/usecase/users"
 	"net/http"
 )
@@ -29,9 +31,13 @@ func (a *Application) Run() error {
 
 	repo := entity.NewRepository(db)
 	userController := users.NewController(repo)
+	topicController := topics.NewController(repo)
+	articleController := articles.NewController(repo)
 
 	s := server.New(server.Config{
-		UserController: userController,
+		UserController:    userController,
+		TopicController:   topicController,
+		ArticleController: articleController,
 	})
 
 	return http.ListenAndServe(a.BindAddr, s.Router)

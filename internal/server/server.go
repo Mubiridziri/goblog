@@ -9,6 +9,8 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"goblog/docs"
+	"goblog/internal/usecase/articles"
+	"goblog/internal/usecase/topics"
 	"goblog/internal/usecase/users"
 	"net/http"
 	"path/filepath"
@@ -21,12 +23,16 @@ const UserKey = "AUTH"
 var secret = []byte("RHYaxoa6iqb1VTCsFtdM2PAAu8i8CYhU")
 
 type Config struct {
-	UserController *users.Controller
+	UserController    *users.Controller
+	TopicController   *topics.Controller
+	ArticleController *articles.Controller
 }
 
 type Server struct {
-	Router         *gin.Engine
-	userController *users.Controller
+	Router            *gin.Engine
+	userController    *users.Controller
+	topicController   *topics.Controller
+	articleController *articles.Controller
 }
 
 type ListQuery struct {
@@ -37,8 +43,10 @@ type ListQuery struct {
 
 func New(config Config) *Server {
 	s := Server{
-		Router:         gin.New(),
-		userController: config.UserController,
+		Router:            gin.New(),
+		userController:    config.UserController,
+		topicController:   config.TopicController,
+		articleController: config.ArticleController,
 	}
 
 	s.registerRoutes()
@@ -64,6 +72,8 @@ func (s *Server) registerRoutes() {
 		ui.GET("/register", s.registerPage)
 		ui.POST("/register", s.registerPage)
 		ui.GET("/u/:username", s.profilePage)
+		s.AddArticlesPagesRoutes(ui)
+
 	}
 
 	s.AddUserPagesRoutes(ui)
@@ -220,9 +230,13 @@ func (s *Server) getListQuery(c *gin.Context) (ListQuery, error) {
 }
 
 func (s *Server) renderHomePage(c *gin.Context) {
-	user, exists := c.Get("user")
-
 	params := gin.H{}
+	user, exists := c.Get("user")
+	topicsList, err := s.topicController.ListTopics(1, 10)
+
+	if err == nil {
+		params["topics"] = topicsList.Entries
+	}
 
 	if exists {
 		params["user"] = user

@@ -1,0 +1,9 @@
+.container {
+    padding: 15px;
+}
+.success {
+    color: green;
+}
+.error {
+    color: red;
+}

@@ -16,6 +16,8 @@ func ConnectAndMigrate(cfg *config.Config) (*gorm.DB, error) {
 
 	// Auto Migrate
 	err = database.AutoMigrate(entity.User{})
+	err = database.AutoMigrate(entity.Topic{})
+	err = database.AutoMigrate(entity.Article{})
 
 	if err != nil {
 		return nil, errors.New("failed auto migrate database")
