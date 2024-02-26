@@ -33,7 +33,14 @@ type Repository interface {
 	UpdateArticle(article *entity.Article) error
 	GetArticleById(id int) (entity.Article, error)
 	ListArticle(page, limit int) ([]entity.Article, error)
+	ListArticlesByTopic(page, limit, topicID int) ([]entity.Article, error)
 	GetArticlesCount() int64
+	GetArticlesByTopicCount(topicID int) int64
+}
+
+type PaginatedArticleList struct {
+	Total   int64     `json:"total"`
+	Entries []Article `json:"entries"`
 }
 
 type Controller struct {
@@ -42,6 +49,44 @@ type Controller struct {
 
 func NewController(repo Repository) *Controller {
 	return &Controller{Repository: repo}
+}
+
+func (c Controller) ListArticle(page, limit int) (PaginatedArticleList, error) {
+	articleDB, err := c.Repository.ListArticle(page, limit)
+
+	if err != nil {
+		return PaginatedArticleList{}, err
+	}
+
+	var articles []Article
+
+	for _, item := range articleDB {
+		articles = append(articles, fromDBArticle(&item))
+	}
+
+	return PaginatedArticleList{
+		Total:   c.Repository.GetArticlesCount(),
+		Entries: articles,
+	}, nil
+}
+
+func (c Controller) ListArticlesByTopic(page, limit, topicID int) (PaginatedArticleList, error) {
+	articleDB, err := c.Repository.ListArticlesByTopic(page, limit, topicID)
+
+	if err != nil {
+		return PaginatedArticleList{}, err
+	}
+
+	var articles []Article
+
+	for _, item := range articleDB {
+		articles = append(articles, fromDBArticle(&item))
+	}
+
+	return PaginatedArticleList{
+		Total:   c.Repository.GetArticlesByTopicCount(topicID),
+		Entries: articles,
+	}, nil
 }
 
 func (c Controller) CreateArticle(input CreateArticle) (Article, error) {

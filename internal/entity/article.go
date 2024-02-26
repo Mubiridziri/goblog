@@ -43,7 +43,24 @@ func (r articleRepository) GetArticleById(id int) (Article, error) {
 func (r articleRepository) ListArticle(page, limit int) ([]Article, error) {
 	var articles []Article
 	offset := (page - 1) * limit
-	if err := r.db.Offset(offset).Limit(limit).Find(&articles).Error; err != nil {
+	if err := r.db.Offset(offset).Limit(limit).Preload("Author").Preload("Topic").Order("id desc").Find(&articles).Error; err != nil {
+		return []Article{}, err
+	}
+
+	return articles, nil
+}
+
+func (r articleRepository) ListArticlesByTopic(page, limit, topicID int) ([]Article, error) {
+	var articles []Article
+	offset := (page - 1) * limit
+	if err := r.db.
+		Offset(offset).
+		Limit(limit).
+		Preload("Author").
+		Preload("Topic").
+		Order("id desc").
+		Where(&Article{TopicID: topicID}).
+		Find(&articles).Error; err != nil {
 		return []Article{}, err
 	}
 
@@ -53,5 +70,11 @@ func (r articleRepository) ListArticle(page, limit int) ([]Article, error) {
 func (r articleRepository) GetArticlesCount() int64 {
 	var count int64
 	r.db.Model(&Article{}).Count(&count)
+	return count
+}
+
+func (r articleRepository) GetArticlesByTopicCount(topicID int) int64 {
+	var count int64
+	r.db.Model(&Article{}).Where(&Article{TopicID: topicID}).Count(&count)
 	return count
 }

@@ -12,6 +12,7 @@ import (
 	"goblog/internal/usecase/articles"
 	"goblog/internal/usecase/topics"
 	"goblog/internal/usecase/users"
+	"math"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -230,17 +231,52 @@ func (s *Server) getListQuery(c *gin.Context) (ListQuery, error) {
 }
 
 func (s *Server) renderHomePage(c *gin.Context) {
-	params := gin.H{}
-	user, exists := c.Get("user")
-	topicsList, err := s.topicController.ListTopics(1, 10)
+	pageParam := c.Query("page")
+	topicIdParam := c.Query("topicId")
 
-	if err == nil {
-		params["topics"] = topicsList.Entries
+	page, err := strconv.Atoi(pageParam)
+
+	if err != nil {
+		page = 1
 	}
 
+	params := gin.H{}
+	user, exists := c.Get("user")
 	if exists {
 		params["user"] = user
 	}
 
+	if topicIdParam != "" {
+		topicID, convErr := strconv.Atoi(topicIdParam)
+
+		if convErr != nil {
+			c.Redirect(http.StatusNotFound, "/")
+			return
+		}
+		articlesList, _ := s.articleController.ListArticlesByTopic(page, 10, topicID)
+		params["articles"] = articlesList.Entries
+		params["currentTopicID"] = topicID
+		paginate(articlesList, page, params)
+
+	} else {
+		articlesList, _ := s.articleController.ListArticle(page, 10)
+		params["articles"] = articlesList.Entries
+		paginate(articlesList, page, params)
+	}
+
+	topicsList, _ := s.topicController.ListTopics(1, 10)
+	params["topics"] = topicsList.Entries
+
 	c.HTML(http.StatusOK, "home.tmpl", params)
+}
+
+func paginate(articlesList articles.PaginatedArticleList, page int, params gin.H) {
+	pagesCount := int(math.Ceil(float64(articlesList.Total) / 10))
+	nextPage := page + 1
+	if nextPage <= pagesCount {
+		params["nextPage"] = nextPage
+	}
+	if page > 1 {
+		params["previousPage"] = page - 1
+	}
 }

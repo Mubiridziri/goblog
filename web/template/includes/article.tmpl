@@ -1,16 +1,18 @@
 {{define "content"}}
     <main class="container">
-        <h1>{{.article.Title}} </h1>
-        <p>{{.article.Topic.Title}}</p>
-        <hr/>
-        <div id="content"></div>
-        <br>
-        <p><i>Опубликовано @{{.user.Username}} {{.article.CreatedAt.Format "02.01.2006 15:04" }}, обновлено {{.article.UpdatedAt.Format "02.01.2006 15:04"}}</i></p>
+        <article class="blog-post">
+            <h2 class="blog-post-title">{{.article.Title}}</h2>
+            <p class="blog-post-meta">{{.article.CreatedAt.Format "02.01.2006 15:04" }} автором <a href="/u/{{.article.Author.Username}}" target="_blank">@{{.article.Author.Username}}</a></p>
+
+            <div id="article-content-{{.article.ID}}"></div>
+
+
+        </article>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        document.getElementById('content').innerHTML =
+        document.getElementById('article-content-{{.article.ID}}').innerHTML =
             marked.parse('{{.article.Content}}');
     </script>
 {{end}}

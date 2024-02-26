@@ -5,7 +5,7 @@ build: ## Build a version
 
 .PHONY: test
 test: ## Run tests
-	go test -v
+	go test -v ./...
 
 .PHONY: clean
 clean: ## Remove temporary files

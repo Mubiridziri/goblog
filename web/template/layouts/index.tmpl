@@ -31,7 +31,7 @@
                 {{if .user}}
                     <a class="btn btn-sm btn-outline-secondary" href="/articles/new"> Написать пост </a>
 
-                    <a class="btn btn-sm btn-outline-secondary" href="/u/{{.user.Username}}">{{ .user.FirstName}} {{.user.LastName}}</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="/u/{{.user.Username}}"  target="_blank">{{ .user.FirstName}} {{.user.LastName}}</a>
                 {{else}}
                     <a class="btn btn-sm btn-outline-secondary" href="/login">Войти</a>
                 {{end}}
@@ -44,7 +44,7 @@
     <div class="nav-scroller py-1 mb-2">
         <nav class="nav d-flex justify-content-between">
             {{range .topics}}
-                <a class="p-2 link-secondary" href="/topics/{{.ID}}">{{.Title}}</a>
+                <a class="p-2 link-secondary" href="/?topicId={{.ID}}">{{.Title}}</a>
             {{end}}
         </nav>
     </div>
